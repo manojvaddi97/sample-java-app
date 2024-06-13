@@ -8,19 +8,21 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        git branch: 'main', url: 'https://github.com/manojvaddi97/sample-java-app.git'
+        echo 'passed'
+        //git branch: 'main', url: 'https://github.com/manojvaddi97/sample-java-app.git'
       }
     }
 
     stage('Build and Test') {
       steps {
+        sh 'ls -ltr'
         sh 'cd sample-java-app && mvn clean package'
       }
     }
 
     stage('Static Code Analysis') {
       environment {
-        SONAR_URL = "http://3.96.197.92:9000"
+        SONAR_URL = "http://52.60.82.223:9000"
       }
       steps {
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
