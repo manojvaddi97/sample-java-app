@@ -1,32 +1,34 @@
 pipeline {
   agent {
     docker {
-      image 'manojvaddi497/java-app:docker-maven-image_2'
-      args '--user root -v /var/run/docker.sock:/var/run/docker.sock'
+      image 'manojvaddi497/java-app:docker-maven-image'
+      args '--user root -v /var/run/docker.sock:/var/run/docker.sock' // mount Docker socket to access the host's Docker daemon
     }
   }
   stages {
-    stage('Checkout') {
+    stage('checkout') {
       steps {
-        echo 'passed'
-        //git branch: 'main', url: 'https://github.com/manojvaddi97/sample-java-app.git'
+        git branch: 'main', url: 'https://github.com/manojvaddi97/sample-java-app.git'
       }
     }
 
     stage('Build and Test') {
       steps {
-        sh 'ls -ltr'
-        sh 'mvn clean package'
+        dir('sample-java-app') {
+          sh 'mvn clean package'
+        }
       }
     }
 
     stage('Static Code Analysis') {
       environment {
-        SONAR_URL = "http://52.60.82.223:9000"
+        SONAR_URL = "http://3.96.197.92:9000"
       }
       steps {
-        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-          sh 'mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+        dir('sample-java-app') {
+          withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+            sh 'mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+          }
         }
       }
     }
@@ -34,14 +36,16 @@ pipeline {
     stage('Build and Push Docker Image') {
       environment {
         DOCKER_IMAGE = "manojvaddi497/cicd:${BUILD_NUMBER}"
-        REGISTRY_CREDENTIALS = 'docker-cred'
+        REGISTRY_CREDENTIALS = credentials('docker-cred')
       }
       steps {
-        script {
-          sh 'docker build -t ${DOCKER_IMAGE} .'
-          def dockerImage = docker.image("${DOCKER_IMAGE}")
-          docker.withRegistry('https://index.docker.io/v1/', "${REGISTRY_CREDENTIALS}") {
-            dockerImage.push()
+        dir('sample-java-app') {
+          script {
+            sh 'docker build -t ${DOCKER_IMAGE} .'
+            def dockerImage = docker.image("${DOCKER_IMAGE}")
+            docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
+              dockerImage.push()
+            }
           }
         }
       }
@@ -53,16 +57,17 @@ pipeline {
         GIT_USER_NAME = "manojvaddi97"
       }
       steps {
-        withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
-          sh '''
-            git config user.email "manojvaddi497@gmail.com"
-            git config user.name "Manoj Vaddi"
-            BUILD_NUMBER=${BUILD_NUMBER}
-            sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" sample-java-app/sample-java-app-manifests/deployment.yml
-            git add sample-java-app/sample-java-app-manifests/deployment.yml
-            git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
-          '''
+        dir('sample-java-app') {
+          withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+            sh '''
+              git config user.email "manojvaddi497@gmail.com"
+              git config user.name "Manoj Vaddi"
+              sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" sample-java-app-manifests/deployment.yml
+              git add sample-java-app-manifests/deployment.yml
+              git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+              git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+            '''
+          }
         }
       }
     }
