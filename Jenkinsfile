@@ -16,7 +16,7 @@ pipeline {
     stage('Build and Test') {
       steps {
         sh 'ls -ltr'
-        sh 'cd sample-java-app && mvn clean package'
+        sh 'mvn clean package'
       }
     }
 
@@ -26,7 +26,7 @@ pipeline {
       }
       steps {
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-          sh 'cd sample-java-app && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+          sh 'mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
         }
       }
     }
@@ -38,7 +38,7 @@ pipeline {
       }
       steps {
         script {
-          sh 'cd sample-java-app && docker build -t ${DOCKER_IMAGE} .'
+          sh 'docker build -t ${DOCKER_IMAGE} .'
           def dockerImage = docker.image("${DOCKER_IMAGE}")
           docker.withRegistry('https://index.docker.io/v1/', "${REGISTRY_CREDENTIALS}") {
             dockerImage.push()
