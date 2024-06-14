@@ -8,12 +8,14 @@ pipeline {
   stages {
     stage('checkout') {
       steps {
+        sh 'pwd'
         git branch: 'main', url: 'https://github.com/manojvaddi97/sample-java-app.git'
       }
     }
 
     stage('Build and Test') {
       steps {
+          sh 'pwd'
           sh 'mvn clean package'
         }
       }
@@ -23,6 +25,7 @@ pipeline {
         SONAR_URL = "http://3.99.178.23:9000"
       }
       steps {
+          sh 'pwd'
           withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
             sh 'mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
           }
@@ -36,6 +39,7 @@ pipeline {
       }
       steps {
           script {
+            sh 'pwd'
             sh 'docker build -t ${DOCKER_IMAGE} .'
             def dockerImage = docker.image("${DOCKER_IMAGE}")
             docker.withRegistry('https://index.docker.io/v1/', "docker-cred") {
@@ -53,6 +57,7 @@ pipeline {
       steps {
           withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
             sh '''
+              pwd
               git config user.email "manojvaddi497@gmail.com"
               git config user.name "Manoj Vaddi"
               sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" sample-java-app-manifests/deployment.yml
