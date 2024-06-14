@@ -60,6 +60,7 @@ pipeline {
               cd /var/lib/jenkins/workspace/ultimate-cicd
               ls -la
               pwd
+              git status
               git config user.email "manojvaddi497@gmail.com"
               git config user.name "Manoj Vaddi"
               sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" sample-java-app-manifests/deployment.yml
