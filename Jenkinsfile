@@ -1,7 +1,7 @@
 pipeline {
   agent {
     docker {
-      image 'manojvaddi497/java-app:docker-maven-image'
+      image 'manojvaddi497/java-app:docker-maven-image_2'
       args '--user root -v /var/run/docker.sock:/var/run/docker.sock' // mount Docker socket to access the host's Docker daemon
     }
   }
@@ -14,24 +14,20 @@ pipeline {
 
     stage('Build and Test') {
       steps {
-        dir('sample-java-app') {
           sh 'mvn clean package'
         }
       }
-    }
 
     stage('Static Code Analysis') {
       environment {
-        SONAR_URL = "http://3.96.197.92:9000"
+        SONAR_URL = "http://3.99.178.23:9000"
       }
       steps {
-        dir('sample-java-app') {
           withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
             sh 'mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
           }
         }
       }
-    }
 
     stage('Build and Push Docker Image') {
       environment {
@@ -39,7 +35,6 @@ pipeline {
         REGISTRY_CREDENTIALS = credentials('docker-cred')
       }
       steps {
-        dir('sample-java-app') {
           script {
             sh 'docker build -t ${DOCKER_IMAGE} .'
             def dockerImage = docker.image("${DOCKER_IMAGE}")
@@ -49,7 +44,6 @@ pipeline {
           }
         }
       }
-    }
 
     stage('Update Deployment File') {
       environment {
@@ -57,7 +51,6 @@ pipeline {
         GIT_USER_NAME = "manojvaddi97"
       }
       steps {
-        dir('sample-java-app') {
           withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
             sh '''
               git config user.email "manojvaddi497@gmail.com"
@@ -72,4 +65,3 @@ pipeline {
       }
     }
   }
-}
