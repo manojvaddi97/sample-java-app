@@ -6,6 +6,11 @@ pipeline {
     }
   }
   stages {
+    stage('Set Safe Directory') {
+      steps {
+        sh 'git config --global --add safe.directory /var/lib/jenkins/workspace/ultimate-cicd'
+      }
+    }
     stage('checkout') {
       steps {
         sh 'pwd'
